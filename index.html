@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <title>AR Windmill</title>
+  
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+    }
+    .ui-container {
+      position: absolute;
+      bottom: 40px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      z-index: 1000; /* ให้อยู่เหนือกล้อง AR */
+      pointer-events: none; /* ป้องกันการบล็อกทัชสกรีนในพื้นที่ว่าง */
+    }
+    .btn {
+      pointer-events: auto; /* ให้เฉพาะปุ่มที่รับการกดได้ */
+      padding: 15px 40px;
+      font-size: 20px;
+      font-weight: bold;
+      color: white;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      border: none;
+      border-radius: 30px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: transform 0.1s, background 0.3s;
+    }
+    .btn:active {
+      transform: scale(0.95);
+    }
+    .btn.stop {
+      background: linear-gradient(135deg, #dc3545, #a71d2a);
+    }
+  </style>
+
+  <script>
+    // สร้าง Component ควบคุมการหมุน เพื่อให้หมุนอย่างต่อเนื่องและหยุดได้สมจริง
+    AFRAME.registerComponent('blade-spinner', {
+      schema: { 
+        spinning: { type: 'boolean', default: false },
+        speed: { type: 'number', default: 3 } // ความเร็วในการหมุน
+      },
+      tick: function (time, timeDelta) {
+        if (!this.data.spinning) return;
+        // หมุนรอบแกน Z (แกนที่หันหน้าเข้าหากล้อง)
+        // object3D.rotation ใช้หน่วยเรเดียน
+        this.el.object3D.rotation.z -= this.data.speed * (timeDelta / 1000);
+      }
+    });
+  </script>
+</head>
+<body>
+
+  <div class="ui-container">
+    <button id="btn-toggle" class="btn">หมุนกังหัน</button>
+  </div>
+
+  <!-- sourceType: webcam เพื่อใช้กล้อง, debugUIEnabled: false ซ่อนข้อความรกๆ -->
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;">
+    
+    <a-marker preset="hiro">
+      
+      <!-- กลุ่มของกังหันลม (ย่อสเกลลงเล็กน้อยให้อยู่ในหน้าจอพอดี) -->
+      <a-entity id="windmill" scale="0.6 0.6 0.6" position="0 0 0">
+        
+        <!-- 1. ฐาน/หอคอยกังหัน (ทรงกรวย) -->
+        <a-cone color="#e8dcb8" radius-bottom="0.8" radius-top="0.5" height="2.5" position="0 1.25 0"></a-cone>
+        <!-- เส้นตกแต่งหอคอย (ประตู/หน้าต่าง) -->
+        <a-box color="#333" width="0.3" height="0.5" depth="0.1" position="0 0.25 0.76"></a-box>
+        
+        <!-- 2. หลังคากังหัน (ทรงกรวย) -->
+        <a-cone color="#8B4513" radius-bottom="0.6" radius-top="0" height="0.8" position="0 2.9 0"></a-cone>
+        
+        <!-- 3. แกนยื่นออกมาสำหรับติดใบพัด -->
+        <a-box color="#444" width="0.2" height="0.2" depth="0.4" position="0 2.5 0.6"></a-box>
+
+        <!-- 4. ชุดใบพัด (Rotor) ติดตั้ง component blade-spinner -->
+        <a-entity id="rotor" position="0 2.5 0.85" blade-spinner="spinning: false; speed: 2.5">
+          
+          <!-- ดุมแกนกลางใบพัด -->
+          <a-sphere color="#222" radius="0.15" position="0 0 0"></a-sphere>
+
+          <!-- ใบพัดแนวนอน (ซ้าย-ขวา) -->
+          <a-entity position="0 0 0">
+            <!-- โครงไม้ -->
+            <a-box color="#8B4513" width="3.5" height="0.05" depth="0.05" position="0 0 0"></a-box>
+            <!-- ผ้าใบพัด 1 -->
+            <a-box color="#F5F5DC" width="1.5" height="0.3" depth="0.02" position="0.9 0.15 0"></a-box>
+            <!-- ผ้าใบพัด 2 -->
+            <a-box color="#F5F5DC" width="1.5" height="0.3" depth="0.02" position="-0.9 -0.15 0"></a-box>
+          </a-entity>
+
+          <!-- ใบพัดแนวตั้ง (บน-ล่าง) -->
+          <a-entity position="0 0 0" rotation="0 0 90">
+            <!-- โครงไม้ -->
+            <a-box color="#8B4513" width="3.5" height="0.05" depth="0.05" position="0 0 0"></a-box>
+            <!-- ผ้าใบพัด 3 -->
+            <a-box color="#F5F5DC" width="1.5" height="0.3" depth="0.02" position="0.9 0.15 0"></a-box>
+            <!-- ผ้าใบพัด 4 -->
+            <a-box color="#F5F5DC" width="1.5" height="0.3" depth="0.02" position="-0.9 -0.15 0"></a-box>
+          </a-entity>
+
+        </a-entity>
+      </a-entity>
+
+    </a-marker>
+    
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    const btn = document.getElementById('btn-toggle');
+    const rotor = document.getElementById('rotor');
+    let isRotating = false;
+
+    // เมื่อกดปุ่ม
+    btn.addEventListener('click', () => {
+      isRotating = !isRotating;
+      
+      // ส่งค่าไปยัง custom component เพื่อเริ่มหรือหยุดหมุน
+      rotor.setAttribute('blade-spinner', 'spinning', isRotating);
+      
+      // เปลี่ยนแปลงหน้าตาของปุ่ม
+      if (isRotating) {
+        btn.innerText = "หยุดหมุน";
+        btn.classList.add('stop');
+      } else {
+        btn.innerText = "หมุนกังหัน";
+        btn.classList.remove('stop');
+      }
+    });
+  </script>
+
+</body>
+</html>
